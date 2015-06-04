@@ -46,8 +46,9 @@ class Apply f => Applicative f where
   (a -> b)
   -> f a
   -> f b
-(<$>) =
-  error "todo: Course.Applicative#(<$>)"
+-- (<$>) = \f f_a -> pure f <*> f_a -- pure f is f (a -> b) applied to f_a is f_b
+-- or point-free
+(<$>) = (<*>) . pure
 
 -- | Insert into Id.
 --
@@ -56,8 +57,8 @@ instance Applicative Id where
   pure ::
     a
     -> Id a
-  pure =
-    error "todo: Course.Applicative pure#instance Id"
+  pure a =
+    Id (a)
 
 -- | Insert into a List.
 --
@@ -66,8 +67,8 @@ instance Applicative List where
   pure ::
     a
     -> List a
-  pure =
-    error "todo: Course.Applicative pure#instance List"
+  pure x =
+    x :. Nil
 
 -- | Insert into an Optional.
 --
@@ -77,7 +78,7 @@ instance Applicative Optional where
     a
     -> Optional a
   pure =
-    error "todo: Course.Applicative pure#instance Optional"
+    Full
 
 -- | Insert into a constant function.
 --
@@ -87,7 +88,8 @@ instance Applicative ((->) t) where
     a
     -> ((->) t a)
   pure =
-    error "todo: Course.Applicative pure#((->) t)"
+    const -- a function from (a->t->a) that discards t .. const x _ = x ... same!
+          -- note this is the K combinator from SK(I) calculus !
 
 -- | Sequences a list of structures to a structure of list.
 --
@@ -109,8 +111,20 @@ sequence ::
   Applicative f =>
   List (f a)
   -> f (List a)
-sequence =
-  error "todo: Course.Applicative#sequence"
+sequence Nil = pure Nil
+sequence (h:.t) =
+  -- sequence t :: f (List a)
+  -- h :: f a
+  --
+  -- we want to get f (List a)
+
+  -- we want (a -> List a -> List a) -> f a -> List a -> List a
+  -- we have a function like this .. fmap .. or <*> .. or lift2 .. same!
+  lift2 (:.) h (sequence t)
+
+  -- or ..
+  -- (:.) <$> h <*> sequence t
+
 
 -- | Replicate an effect a given number of times.
 --
@@ -133,8 +147,8 @@ replicateA ::
   Int
   -> f a
   -> f (List a)
-replicateA =
-  error "todo: Course.Applicative#replicateA"
+replicateA n =
+  sequence . replicate n
 
 -- | Filter a list with a predicate that produces an effect.
 --

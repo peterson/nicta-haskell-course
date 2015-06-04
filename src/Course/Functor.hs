@@ -41,8 +41,10 @@ instance Functor Id where
     (a -> b)
     -> Id a
     -> Id b
-  (<$>) =
-    error "todo: Course.Functor (<$>)#instance Id"
+  -- get the 'a' out of Id a (using a pattern match)
+  -- and then wrap (f a) in Id, to give an Id (b)
+  (<$>) f (Id a) =
+    Id (f a)
 
 -- | Maps a function on the List functor.
 --
@@ -56,8 +58,15 @@ instance Functor List where
     (a -> b)
     -> List a
     -> List b
-  (<$>) =
-    error "todo: Course.Functor (<$>)#instance List"
+  -- When you're here, you're using constructors, not types, so List will never appear
+  -- List is a data-type that has two constructors, 'Nil' and ':.' (cons)
+  (<$>) _ Nil = Nil
+  (<$>) f (h:.t) =
+    f h :. ( f <$> t )
+  -- or you can do the same using a fold ...
+  -- (<$>) f =
+  --   foldRight ( (:.) . f ) Nil -- aka map
+
 
 -- | Maps a function on the Optional functor.
 --
@@ -71,8 +80,11 @@ instance Functor Optional where
     (a -> b)
     -> Optional a
     -> Optional b
-  (<$>) =
-    error "todo: Course.Functor (<$>)#instance Optional"
+  -- Similarly, Optional's constructors are 'Full' and 'Empty'
+  (<$>) _ (Empty)  = Empty
+  (<$>) f (Full a) =
+    Full (f a)
+
 
 -- | Maps a function on the reader ((->) t) functor.
 --
@@ -83,8 +95,14 @@ instance Functor ((->) t) where
     (a -> b)
     -> ((->) t a)
     -> ((->) t b)
-  (<$>) =
-    error "todo: Course.Functor (<$>)#((->) t)"
+  -- z is a fn (t -> a), f is a fn (a -> b), therefore f . z is fn (t -> b) ... ;)
+  (<$>) f z =
+    f . z
+  -- or, in fully point-free style
+  -- (<$>) =
+  --   (.)
+
+
 
 -- | Anonymous map. Maps a constant value on a functor.
 --
@@ -94,13 +112,21 @@ instance Functor ((->) t) where
 -- prop> x <$ [a,b,c] == [x,x,x]
 --
 -- prop> x <$ Full q == Full x
+--
+-- i.e. throw away the values in functor (f b) and return a functor (f a)
+-- it's like doing a map without even looking at the elements of the functor
 (<$) ::
   Functor f =>
   a
   -> f b
   -> f a
-(<$) =
-  error "todo: Course.Functor#(<$)"
+(<$) a g =
+  const a <$> g
+
+-- or, using point-free
+-- (<$) =
+--   (<$>) . const
+
 
 -- | Anonymous map producing unit value.
 --
@@ -120,7 +146,7 @@ void ::
   f a
   -> f ()
 void =
-  error "todo: Course.Functor#void"
+  (<$) () -- map across functor (f a) and fill it with ()'s
 
 -----------------------
 -- SUPPORT LIBRARIES --

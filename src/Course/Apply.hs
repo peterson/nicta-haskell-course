@@ -35,8 +35,7 @@ instance Apply Id where
     Id (a -> b)
     -> Id a
     -> Id b
-  (<*>) =
-    error "todo: Course.Apply (<*>)#instance Id"
+  (<*>) (Id f) (Id a)  = Id (f a) -- using pattern-match to unpack
 
 -- | Implement @Apply@ instance for @List@.
 --
@@ -47,8 +46,8 @@ instance Apply List where
     List (a -> b)
     -> List a
     -> List b
-  (<*>) =
-    error "todo: Course.Apply (<*>)#instance List"
+  (<*>) f a = flatMap (\g -> map g a) f
+
 
 -- | Implement @Apply@ instance for @Optional@.
 --
@@ -65,8 +64,14 @@ instance Apply Optional where
     Optional (a -> b)
     -> Optional a
     -> Optional b
-  (<*>) =
-    error "todo: Course.Apply (<*>)#instance Optional"
+  -- this works ...
+  -- (<*>) Empty _ = Empty
+  -- (<*>) _ Empty = Empty
+  -- (<*>) (Full f) (Full a) = Full (f a)
+
+  -- or using bindOptional (bindOptional ~= flatMap and mapOptional ~= map)
+  (<*>) f a = bindOptional (\g -> mapOptional g a) f
+
 
 -- | Implement @Apply@ instance for reader.
 --
@@ -84,13 +89,18 @@ instance Apply Optional where
 --
 -- >>> ((*) <*> (+2)) 3
 -- 15
-instance Apply ((->) t) where
+instance Apply ((->) t) where -- pronounce '(->) t' as 'reader for t'
   (<*>) ::
-    ((->) t (a -> b))
-    -> ((->) t a)
-    -> ((->) t b)
-  (<*>) =
-    error "todo: Course.Apply (<*>)#instance ((->) t)"
+    ((->) t (a -> b))  -- (t -> a -> b) --> x
+    -> ((->) t a)      -- (t -> a) --> y
+    -> ((->) t b)      -- (t) --> z
+  (<*>) x y z =
+    x z $ y z          -- this is EXACTLY the definition of the S combinator in SK(I)
+                       -- calculus ... i.e. Sxyz = xz(yz)
+
+                       -- breaking it down ...
+                       -- y z :: a ... x z :: (a -> b) .. then x z (y z) :: b
+
 
 -- | Apply a binary function in the environment.
 --
@@ -117,8 +127,11 @@ lift2 ::
   -> f a
   -> f b
   -> f c
-lift2 =
-  error "todo: Course.Apply#lift2"
+lift2 f f_a f_b =
+  f <$> f_a <*> f_b
+  -- map .. (<$>) :: f -> f (b -> c)
+  -- apply .. (<*>) :: f (b -> c) -> f b -> f c
+
 
 -- | Apply a ternary function in the environment.
 --
@@ -149,8 +162,8 @@ lift3 ::
   -> f b
   -> f c
   -> f d
-lift3 =
-  error "todo: Course.Apply#lift2"
+lift3 f f_a f_b f_c =
+  f <$> f_a <*> f_b <*> f_c
 
 -- | Apply a quaternary function in the environment.
 --
@@ -182,8 +195,8 @@ lift4 ::
   -> f c
   -> f d
   -> f e
-lift4 =
-  error "todo: Course.Apply#lift4"
+lift4 f f_a f_b f_c f_d =
+  f <$> f_a <*> f_b <*> f_c <*> f_d
 
 -- | Sequence, discarding the value of the first argument.
 -- Pronounced, right apply.
@@ -209,7 +222,7 @@ lift4 =
   -> f b
   -> f b
 (*>) =
-  error "todo: Course.Apply#(*>)"
+  lift2 (const id)
 
 -- | Sequence, discarding the value of the second argument.
 -- Pronounced, left apply.
@@ -235,7 +248,7 @@ lift4 =
   -> f a
   -> f b
 (<*) =
-  error "todo: Course.Apply#(<*)"
+  lift2 const
 
 -----------------------
 -- SUPPORT LIBRARIES --
