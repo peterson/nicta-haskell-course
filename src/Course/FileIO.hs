@@ -47,7 +47,7 @@ And b.txt, containing:
 And c.txt, containing:
   the contents of c
 
-$ runhaskell io.hs "files.txt"
+$ runhaskell FileIo.hs "files.txt"
 ============ a.txt
 the contents of a
 
@@ -62,41 +62,87 @@ the contents of c
 -- /Tip:/ use @getArgs@ and @run@
 main ::
   IO ()
-main =
-  error "todo: Course.FileIO#main"
+main = do
+  a <- getArgs
+  case a of
+    h:._ -> run h
+    Nil -> run "/Users/peterson/proj/haskell/nicta-course/share/files.txt"
+
+  -- using bind (>>=) notation ...
+  --
+  -- getArgs >>= \a ->
+  -- case a of
+  --   (a:._) -> undefined
+  --   Nil -> putStrLn "error: need an argument"
+
 
 type FilePath =
   Chars
 
 -- /Tip:/ Use @getFiles@ and @printFiles@.
 run ::
-  Chars
+  FilePath
   -> IO ()
-run =
-  error "todo: Course.FileIO#run"
+run file =
+  do c <- readFile file
+     d <- getFiles (lines c)
+     printFiles d
+
+  --  using bind (>>=) notation ...
+  --
+  -- readFile file >>= \c ->
+  -- getFiles (lines c) >>= \d ->
+  -- printFiles d
+
 
 getFiles ::
   List FilePath
   -> IO (List (FilePath, Chars))
-getFiles =
-  error "todo: Course.FileIO#getFiles"
+getFiles files =
+  sequence (getFile <$> files)
 
+--
+-- to test:
+--
+-- getFile "a.txt"
+--
 getFile ::
   FilePath
   -> IO (FilePath, Chars)
-getFile =
-  error "todo: Course.FileIO#getFile"
+getFile name =
+  (\content -> (name,content)) <$> readFile name
 
+
+--
+-- to test:
+-- > printFiles (("name1","contents1") :. ("name2","contents2") :. Nil)
+--
+-- ======== name1
+-- contents1
+-- ======== name2
+-- contents2
+--
 printFiles ::
   List (FilePath, Chars)
   -> IO ()
-printFiles =
-  error "todo: Course.FileIO#printFiles"
+printFiles files =
+  -- void (sequence ((\(n,c) -> printFile n c) <$> files))
 
+  -- improve this using uncurry ...  (a -> b -> c) -> (a, b) -> c
+  void (sequence ((uncurry printFile) <$> files))
+
+
+--
+-- to test:
+-- > printFile "name1" "content1"
+--
+-- ======== name1
+-- content1
+--
 printFile ::
   FilePath
   -> Chars
   -> IO ()
-printFile =
-  error "todo: Course.FileIO#printFile"
-
+printFile name content =
+  putStrLn ("======== " ++ name) >> -- anonymous bind (no lambda needed)
+  putStrLn content
