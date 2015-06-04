@@ -193,8 +193,10 @@ findM ::
   (a -> f Bool)
   -> List a
   -> f (Optional a)
-findM =
-  error "todo: Course.State#findM"
+findM _ Nil = pure Empty
+findM p (h:.t) =
+  p h >>= \b -> if b then pure (Full h) else findM p t
+
 
 -- | Find the first element in a `List` that repeats.
 -- It is possible that no element repeats, hence an `Optional` result.
@@ -207,8 +209,43 @@ firstRepeat ::
   Ord a =>
   List a
   -> Optional a
-firstRepeat =
-  error "todo: Course.State#firstRepeat"
+firstRepeat list =
+
+  -- implementing this using a type hole approach ...
+
+  -- step 1:
+
+  -- eval (findM (\a -> _undefined) list) S.empty
+  -- ... Found hole ‘_undefined’ with type: State (S.Set a0) Bool
+
+
+  -- step 2:
+  -- expand this using State type constructor and \s -> (_undef, _undef) function
+
+  -- eval (findM (\a -> (State (\s -> (_undefined, _undefined)))) list) S.empty
+
+  -- step 3:
+  -- now we see the types for the two type holes:
+  -- first _undefined ... Found hole ‘_undefined’ with type: Bool
+  -- second _undefined ... Found hole ‘_undefined’ with type: S.Set a0
+
+  -- replace the first _undefined with something that returns bool
+  -- >>> S.member a :: Bool
+
+  -- eval (findM (\a -> (State (\s -> (S.member a s, _undefined)))) list) S.empty
+
+
+  -- step 4:
+  -- now we're left with the second _undefined with type: S.Set a0
+  -- replace the second _undefined with something that returns a Set
+
+  --- >>>  S.insert a :: Set a
+
+  eval (findM (\a -> (State (\s -> (S.member a s, S.insert a s)))) list) S.empty
+
+  -- and we're finished!
+
+
 
 -- | Remove all duplicate elements in a `List`.
 -- /Tip:/ Use `filtering` and `State` with a @Data.Set#Set@.
