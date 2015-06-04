@@ -1,0 +1,194 @@
+Notes
+
+--
+-- Day 1
+--
+
+* Lists
+
+
+
+--
+-- Day 2
+--
+
+* Notes on kinds
+
+>> :k Int
+Int :: *
+
+>> :k List
+List :: * -> *
+
+>> :k []
+[] :: * -> *
+
+
+>> :k Person
+Person :: *
+
+>> :k Parser
+Parser :: * -> *
+
+
+>> :k State
+State :: * -> * -> *
+
+>> :k StateT
+StateT :: * -> (* -> *) -> * -> *
+
+
+
+
+* Debugging trick
+
+-- debugging trick by Axman6 (Alex Mason)
+--
+-- f a y x | traceShow ("f",a,x,y) False = undefined
+--         | otherwise = ... <your function definition here>
+
+
+* SK(I) combinator calculus
+
+Is defined as:
+
+  Kxy = x
+  Sxyz = xz(yz)
+
+- K is const
+- S is apply (<*>) for the case of (->) t (i.e. 'reader of t')
+
+- in Applicative, the fn "pure" is const => K
+
+
+
+* lift
+
+lift0 :: a -> f a -- this is pure!
+lift1 :: (a -> b) -> f a -> f b -- this is fmap!
+lift2 :: (a -> b -> c) -> f a -> f b -> f c
+lift3 :: (a -> b -> c -> d) -> f a -> f b -> f c -> f d
+
+
+* Functors
+
+- has fmap() (sometimes called "apply" ... <*>)
+
+* Applicative functors
+
+- have fmap() ("<*>") and pure()
+
+
+
+- Need to finish off remaining defs in Apply, Applicative etc
+
+
+
+
+
+* Bind:
+
+.. (>>=) bind
+
+.. (=<<) bind (flip of other bind)
+
+.. (<=<) - Kleisi composition
+
+- Need to finish off remaining definitions in Bind
+
+
+
+* A Monad is something that supports Bind and Applicative
+
+- Functors => Apply => Applicative => Monad
+
+
+A monad has:
+
+- bind
+- fmap
+- pure
+
+
+* Implemented FileIO.hs ..
+  - A good task would be to rewrite this in regular Haskell (using in-built
+  lists and standard prelude functions for file manipulation, etc).
+
+
+* Parsing - Person.hs (record syntax) and Parser.hs (parser implementation)
+
+
+-- Day 3
+
+
+- In Course.Parser, list calls list1, and list1 calls list (mutual recursion) ...
+
+
+* Church encodings
+
+
+* Catamorphisms
+
+- Catamorphism is the function that takes the constructors and returns identity
+
+e.g.
+
+> catF <cons1> <cons2> x == x
+
+For example:
+- foldRight is is catamorphism of List
+
+> foldRight :: (a -> b -> b) -> b -> List a -> b
+
+> foldRight (:.) Nil (1:.2:.3:.Nil) == (1:.2:.3:.Nil)
+
+
+e.g for Optional
+
+
+e.g. for Maybe (in mainstream haskell).. it's "maybe"
+
+maybe :: b -> (a -> b) -> Maybe a -> b
+
+
+====
+
+* Rewriting do notation using applicatives
+
+- Applicative is weaker than monad. All monads are applicatives but not all applicatives are monads.
+
+- When you see do notation:
+
+do c <- ...
+   d <- ...
+   e <- ...
+
+where c, d, e etc DO NOT APPEAR on the right-side of the arrow (<-) .. THEN you
+can rewrite using applicative syntax.
+
+If however:
+
+do c <- ...
+   d <- ... d
+   e <- ...
+
+then you cannot rewrite this as an applicative.
+
+An example (from surnameParser):
+
+do c <- upper               -- one upper-case character
+   d <- thisMany 5 $ lower  -- 5 lower case characters
+   e <- list lower          -- zero or  more lower-case characters
+   pure (c :. d ++ e)       -- --> uppercase :. 5 lowercase ++ remainder
+
+... is equivalent to ...
+
+(\c d e -> c :. d ++ e) <$> upper <*> thisMany 5 lower <*> list lower
+
+====
+
+
+Functors
+
+- must satisfy law of identity and law of composition
+- YOU the programmer are burdened to ensure you comply to these ...
