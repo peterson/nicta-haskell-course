@@ -41,8 +41,22 @@ instance Functor (State s) where
     (a -> b)
     -> State s a
     -> State s b
-  (<$>) =
-      error "todo: Course.State#(<$>)"
+  (<$>) f (State k) =
+    -- f :: a -> b
+    -- k :: s -> (a, s)
+    -- s :: s
+    -- a :: a
+    -- s' :: s
+
+    -- (1) k matches the runState function :: s -> (a, s)
+    -- therefore applying k to s, i.e. (k s) yields (a, s')
+    -- (2) applying the functor f to a is (f a)
+    -- therefore we return
+    State (\s ->
+      let (a, s') = k s
+      in  (f a, s') )
+
+
 
 -- | Implement the `Apply` instance for `State s`.
 -- >>> runState (pure (+1) <*> pure 0) 0
@@ -55,9 +69,11 @@ instance Apply (State s) where
   (<*>) ::
     State s (a -> b)
     -> State s a
-    -> State s b 
-  (<*>) =
-    error "todo: Course.State (<*>)#instance (State s)"
+    -> State s b
+  (<*>) (State f) (State a)=
+    State (\s -> let (g, t) = f s
+                     (q, u) = a t
+                 in  (g q, u) )
 
 -- | Implement the `Applicative` instance for `State s`.
 -- >>> runState (pure 2) 0
@@ -66,8 +82,15 @@ instance Applicative (State s) where
   pure ::
     a
     -> State s a
+
+  --
+  -- pure a =
+  --   State (\s -> (a,s))
+
+  -- or in pure lambda-style (no args to pure):
   pure =
-    error "todo: Course.State pure#instance (State s)"
+    \a -> State (\s -> (a,s))
+
 
 -- | Implement the `Bind` instance for `State s`.
 -- >>> runState ((const $ put 2) =<< put 1) 0
@@ -77,8 +100,18 @@ instance Bind (State s) where
     (a -> State s b)
     -> State s a
     -> State s b
-  (=<<) =
-    error "todo: Course.State (=<<)#instance (State s)"
+  (=<<) f (State k) =
+    -- State s b ~> s -> (b, s)
+    -- f :: a -> State s b
+    -- k :: s -> (a, s)
+    -- s :: s
+    --
+    -- GOAL :: (b, s)
+    --
+
+    State (\s -> let (a, t) = k s
+                 in runState (f a) t)
+
 
 instance Monad (State s) where
 
@@ -89,8 +122,13 @@ exec ::
   State s a
   -> s
   -> s
-exec =
-  error "todo: Course.State#exec"
+exec (State k) =
+  -- k :: s -> (a, s)
+  -- snd :: (a, b) -> b
+  -- therefore (snd . k) :: s
+  -- i.e. runState and then return the resulting state 's'
+  snd . k
+
 
 -- | Run the `State` seeded with `s` and retrieve the resulting value.
 --
@@ -99,8 +137,13 @@ eval ::
   State s a
   -> s
   -> a
-eval =
-  error "todo: Course.State#eval"
+eval (State k) =
+  -- k :: s -> (a, s)
+  -- fst :: (a, b) -> a
+  -- therefore fst . k :: a
+  -- i.e. runState and then return the resulting value 'a'
+  fst . k
+
 
 -- | A `State` where the state also distributes into the produced value.
 --
@@ -109,7 +152,8 @@ eval =
 get ::
   State s s
 get =
-  error "todo: Course.State#get"
+  State (\s -> (s,s))
+
 
 -- | A `State` where the resulting state is seeded with the given value.
 --
@@ -118,8 +162,17 @@ get =
 put ::
   s
   -> State s ()
-put =
-  error "todo: Course.State#put"
+put s =
+  State (\_ -> ((),s))
+
+
+-- | .. new method
+modify ::
+  (s -> s)
+  -> State s ()
+modify f =
+  State (\s -> ((),f s))
+
 
 -- | Find the first element in a `List` that satisfies a given predicate.
 -- It is possible that no element is found, hence an `Optional` result.

@@ -19,4 +19,3 @@ data Person = Person {
   smoker :: Char,
   phone :: Chars
 } deriving (Eq, Show)
-
