@@ -33,8 +33,8 @@ instance Extend Id where
     (Id a -> b)
     -> Id a
     -> Id b
-  (<<=) =
-    error "todo: Course.Extend (<<=)#instance Id"
+  (<<=) f a =
+    Id (f a)
 
 -- | Implement the @Extend@ instance for @List@.
 --
@@ -46,13 +46,23 @@ instance Extend Id where
 --
 -- >>> reverse <<= ((1 :. 2 :. 3 :. Nil) :. (4 :. 5 :. 6 :. Nil) :. Nil)
 -- [[[4,5,6],[1,2,3]],[[4,5,6]]]
+
+-- dual of flatten
+unflatten :: List a -> List (List a)
+unflatten Nil = Nil
+unflatten l@(_ :. t) = l :. unflatten t
+
+-- dual of flatMap (note order of composed functions is reversed!)
+mapUnflat :: (List a -> b) -> List a -> List b
+mapUnflat = \f -> map f . unflatten
+
 instance Extend List where
   (<<=) ::
     (List a -> b)
     -> List a
     -> List b
   (<<=) =
-    error "todo: Course.Extend (<<=)#instance List"
+    mapUnflat
 
 -- | Implement the @Extend@ instance for @Optional@.
 --
@@ -61,13 +71,19 @@ instance Extend List where
 --
 -- >>> id <<= Empty
 -- Empty
+
+-- dual of bindOptional
+extendOptional :: (Optional a -> b) -> Optional a -> Optional b
+extendOptional _ Empty    = Empty
+extendOptional f a        = Full (f a)
+
 instance Extend Optional where
   (<<=) ::
     (Optional a -> b)
     -> Optional a
     -> Optional b
   (<<=) =
-    error "todo: Course.Extend (<<=)#instance Optional"
+    extendOptional
 
 -- | Duplicate the functor using extension.
 --
@@ -87,4 +103,4 @@ cojoin ::
   f a
   -> f (f a)
 cojoin =
-  error "todo: Course.Extend#cojoin"
+  (<<=) id
