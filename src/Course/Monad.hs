@@ -155,8 +155,12 @@ join =
   f a
   -> (a -> f b)
   -> f b
-(>>=) =
-  flip (=<<)
+(>>=) a f =
+  join (f <$> a)
+
+-- or ...
+-- (>>=) =
+-- flip (=<<)
 
 infixl 1 >>=
 
@@ -171,8 +175,8 @@ infixl 1 >>=
   -> (a -> f b)
   -> a
   -> f c
-(<=<) =
-  error "todo: Course.Monad#(<=<)"
+(<=<) f g =
+  (=<<) f . g
 
 infixr 1 <=<
 

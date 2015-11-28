@@ -106,7 +106,7 @@ instance Applicative List where
     -> List a
     -> List b
   (<*>) f a =
-    flapMap (\g -> map g a) f
+    flatMap (\g -> map g a) f
 
 
 
