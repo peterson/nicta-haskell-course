@@ -9,9 +9,7 @@ module Course.Parser where
 import Course.Core
 import Course.Person
 import Course.Functor
-import Course.Apply
 import Course.Applicative
-import Course.Bind
 import Course.Monad
 import Course.List
 import Course.Optional
@@ -745,17 +743,9 @@ instance Functor Parser where
   (<$>) =
      mapParser
 
--- | Write a Apply instance for a @Parser@.
--- /Tip:/ Use @bindParser@ and @valueParser@.
-instance Apply Parser where
-  (<*>) ::
-    Parser (a -> b)
-    -> Parser a
-    -> Parser b
-  (<*>) f a =
-    bindParser (\f' -> mapParser f' a) f
 
 -- | Write an Applicative functor instance for a @Parser@.
+-- /Tip:/ Use @bindParser@ and @valueParser@.
 instance Applicative Parser where
   pure ::
     a
@@ -763,13 +753,19 @@ instance Applicative Parser where
   pure =
     valueParser
 
--- | Write a Bind instance for a @Parser@.
-instance Bind Parser where
+  (<*>) ::
+    Parser (a -> b)
+    -> Parser a
+    -> Parser b
+  (<*>) f a =
+    bindParser (\f' -> mapParser f' a) f
+
+
+-- | Write a Monad instance for a @Parser@.
+instance Monad Parser where
   (=<<) ::
     (a -> Parser b)
     -> Parser a
     -> Parser b
   (=<<) =
     bindParser
-
-instance Monad Parser where
